@@ -6,7 +6,10 @@ use validator::Validate;
 use crate::{
     domains::user::{Email, Username},
     parsers::ValidateJson,
-    utils::response::{DataResponse, ServerResponse},
+    utils::{
+        password::hash_password,
+        response::{DataResponse, ServerResponse},
+    },
 };
 
 use super::loader::insert_new_user;
@@ -31,6 +34,13 @@ pub async fn register(
     State(pool): State<PgPool>,
     ValidateJson(payload): ValidateJson<Payload>,
 ) -> ServerResponse {
+    let password_hash = hash_password(payload.password).await?;
+
+    let payload = Payload {
+        password: password_hash,
+        ..payload
+    };
+
     let user_id = insert_new_user(&pool, &payload).await?;
     Ok((StatusCode::OK, DataResponse::new(user_id.to_string())).into_response())
 }
