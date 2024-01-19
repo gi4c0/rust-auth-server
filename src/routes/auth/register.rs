@@ -10,15 +10,12 @@ use validator::Validate;
 
 use crate::{
     domains::user::{Email, Username},
-    parsers::{
-        user::{validate_email, validate_username},
-        ValidateJson,
-    },
+    parsers::ValidateJson,
 };
 
 #[derive(Deserialize, Debug, Serialize, Validate)]
 pub struct Payload {
-    #[validate(custom = "validate_username")]
+    #[validate(custom = "crate::parsers::user::validate_username")]
     username: Username,
 
     #[validate(length(
@@ -28,12 +25,11 @@ pub struct Payload {
     ))]
     password: String,
 
-    #[validate(custom = "validate_email")]
+    #[validate(custom = "crate::parsers::user::validate_email")]
     email: Email,
 }
 
 pub async fn register(
-    // ValidateJson(payload): ValidateJson<Payload>,
     State(_pool): State<PgPool>,
     ValidateJson(payload): ValidateJson<Payload>,
 ) -> Response {

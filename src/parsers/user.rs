@@ -16,7 +16,7 @@ pub fn validate_username(username: &Username) -> Result<(), ValidationError> {
 }
 
 pub fn validate_email(email: &Email) -> Result<(), ValidationError> {
-    if !validator::validate_email(Cow::Owned(email.as_ref().to_owned())) {
+    if !validator::validate_email(email.as_ref()) {
         return Err(ValidationError {
             code: Cow::from("invalid_email"),
             params: HashMap::new(),
