@@ -1,4 +1,5 @@
 use axum::{routing::post, Router};
+use dotenv::dotenv;
 use tokio::net::TcpListener;
 
 use crate::routes::auth::register;
@@ -12,6 +13,8 @@ mod utils;
 
 #[tokio::main]
 async fn main() {
+    dotenv().ok();
+
     let config = configuration::parse_config();
     let pool = db::connect(&config.db).await;
 

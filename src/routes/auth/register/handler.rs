@@ -1,9 +1,4 @@
-use axum::{
-    extract::State,
-    http::StatusCode,
-    response::{IntoResponse, Response},
-    Json,
-};
+use axum::{extract::State, http::StatusCode, response::IntoResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use validator::Validate;
@@ -11,27 +6,31 @@ use validator::Validate;
 use crate::{
     domains::user::{Email, Username},
     parsers::ValidateJson,
+    utils::response::{DataResponse, ServerResponse},
 };
+
+use super::loader::insert_new_user;
 
 #[derive(Deserialize, Debug, Serialize, Validate)]
 pub struct Payload {
     #[validate(custom = "crate::parsers::user::validate_username")]
-    username: Username,
+    pub username: Username,
 
     #[validate(length(
         min = 8,
         max = 50,
         message = "Invalid password. Expected length 1 < x < 50"
     ))]
-    password: String,
+    pub password: String,
 
     #[validate(custom = "crate::parsers::user::validate_email")]
-    email: Email,
+    pub email: Email,
 }
 
 pub async fn register(
-    State(_pool): State<PgPool>,
+    State(pool): State<PgPool>,
     ValidateJson(payload): ValidateJson<Payload>,
-) -> Response {
-    (StatusCode::OK, Json(payload)).into_response()
+) -> ServerResponse {
+    let user_id = insert_new_user(&pool, &payload).await?;
+    Ok((StatusCode::OK, DataResponse::new(user_id.to_string())).into_response())
 }
