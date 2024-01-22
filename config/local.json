@@ -5,5 +5,9 @@
         "username": "alexpan",
         "password": "123",
         "db_name": "auth_server"
+    },
+    "app": {
+      "host": "127.0.0.1",
+      "port": 3000
     }
 }

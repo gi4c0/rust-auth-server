@@ -1,3 +1,3 @@
-mod register;
+pub mod register;
 
-pub use register::*;
+pub use register::register;

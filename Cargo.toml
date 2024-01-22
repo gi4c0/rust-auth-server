@@ -3,6 +3,14 @@ name = "auth_server"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+name = "lib"
+path = "src/lib.rs"
+
+[[bin]]
+name = "auth_server_bin"
+path = "src/main.rs"
+
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
@@ -21,4 +29,5 @@ dotenv = "0.15.0"
 argon2 = "0.5.2"
 
 [dev-dependencies]
+reqwest = { version = "0.11.23", features = ["json"] }
 axum-macros = "0.4.1"

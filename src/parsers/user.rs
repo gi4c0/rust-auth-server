@@ -5,10 +5,9 @@ use validator::ValidationError;
 use crate::domains::user::{Email, Username};
 
 pub fn validate_username(username: &Username) -> Result<(), ValidationError> {
-    let username = username.as_ref();
-    let username_len = username.len();
+    let username_len = username.as_ref().len();
 
-    if username_len < 1 || username_len > 50 {
+    if username_len < 3 || username_len > 50 {
         return Err(ValidationError::new("invalid_username"));
     }
 

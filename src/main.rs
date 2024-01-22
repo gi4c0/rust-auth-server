@@ -1,15 +1,7 @@
 use axum::{routing::post, Router};
 use dotenv::dotenv;
+use lib::{configuration, db, routes::auth::register};
 use tokio::net::TcpListener;
-
-use crate::routes::auth::register;
-
-mod configuration;
-mod db;
-mod domains;
-mod parsers;
-mod routes;
-mod utils;
 
 #[tokio::main]
 async fn main() {
