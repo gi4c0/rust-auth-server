@@ -22,7 +22,7 @@ pub struct Payload {
     #[validate(length(
         min = 8,
         max = 50,
-        message = "Invalid password. Expected length 1 < x < 50"
+        message = "Invalid password. Expected length 8 < x < 50"
     ))]
     pub password: String,
 

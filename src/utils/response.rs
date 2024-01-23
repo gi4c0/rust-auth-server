@@ -40,5 +40,5 @@ impl<T: Serialize> DataResponse<T> {
     }
 }
 
-pub type ServerResponse = Result<Response, ServerError>;
 pub type ServerResult<T> = Result<T, ServerError>;
+pub type ServerResponse = Result<Response, ServerError>;

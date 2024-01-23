@@ -24,6 +24,12 @@ pub enum ServerError {
 
     #[error("User with given username or email already exists")]
     DuplicatedUser,
+
+    #[error("{0}")]
+    NotFound(String),
+
+    #[error("Invalid login or password")]
+    InvalidCredentials,
 }
 
 impl IntoResponse for ServerError {
@@ -41,6 +47,18 @@ impl IntoResponse for ServerError {
                 )),
             )
                 .into_response(),
+
+            ServerError::InvalidCredentials => (
+                StatusCode::UNAUTHORIZED,
+                Json(ErrorResponse::message(
+                    ServerError::InvalidCredentials.to_string(),
+                )),
+            )
+                .into_response(),
+
+            ServerError::NotFound(e) => {
+                (StatusCode::NOT_FOUND, Json(ErrorResponse::message(e))).into_response()
+            }
 
             ServerError::AxumJsonRejection(e) => (
                 StatusCode::BAD_REQUEST,
