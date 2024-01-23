@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
 use axum::{response::Response, Json};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 use super::err::ServerError;
 
@@ -29,9 +29,9 @@ impl<T> ErrorResponse<T> {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize)]
 pub struct DataResponse<T> {
-    data: T,
+    pub data: T,
 }
 
 impl<T: Serialize> DataResponse<T> {
