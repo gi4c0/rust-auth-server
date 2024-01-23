@@ -4,7 +4,7 @@ use sqlx::PgPool;
 use validator::Validate;
 
 use crate::{
-    domains::user::{Email, Username},
+    domains::user::{Email, Password, Username},
     parsers::ValidateJson,
     utils::{
         password::hash_password,
@@ -19,12 +19,8 @@ pub struct Payload {
     #[validate(custom = "crate::parsers::user::validate_username")]
     pub username: Username,
 
-    #[validate(length(
-        min = 8,
-        max = 50,
-        message = "Invalid password. Expected length 8 < x < 50"
-    ))]
-    pub password: String,
+    #[validate(custom = "crate::parsers::user::validate_password")]
+    pub password: Password,
 
     #[validate(custom = "crate::parsers::user::validate_email")]
     pub email: Email,

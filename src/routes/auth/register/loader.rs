@@ -13,7 +13,7 @@ pub async fn insert_new_user(pool: &PgPool, user: &Payload) -> ServerResult<Uuid
             RETURNING id
         "#,
         user.username.as_ref(),
-        &user.password,
+        user.password.as_ref(),
         user.email.as_ref()
     )
     .fetch_one(pool)

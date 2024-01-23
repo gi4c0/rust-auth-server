@@ -4,6 +4,8 @@ use dotenv::dotenv;
 use lib::{
     application::Application,
     configuration::{self, AppConfig, Configuration, DBConfig},
+    domains::user::{Email, Password, UserID, Username},
+    utils::password::hash_password,
 };
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
@@ -11,8 +13,16 @@ use uuid::Uuid;
 pub struct TestApp {
     pub address: String,
     pub pool: PgPool,
+    pub test_user: TestUser,
     connection: RefCell<PgConnection>,
     db_name: String,
+}
+
+pub struct TestUser {
+    pub id: UserID,
+    pub username: Username,
+    pub password: Password,
+    pub email: Email,
 }
 
 impl TestApp {
@@ -34,16 +44,18 @@ impl TestApp {
 
         let (connection, pool) = create_db(&config.db).await;
 
-        let app = Application::build(&config).await.unwrap();
+        let app = Application::build(&config).await;
         let port = app.get_port();
 
         tokio::spawn(app.run());
+        let test_user = create_test_user(&pool).await;
 
         TestApp {
             address: format!("127.0.0.1:{port}"),
             connection: RefCell::new(connection),
             pool,
             db_name,
+            test_user,
         }
     }
 
@@ -66,6 +78,37 @@ impl TestApp {
             .await
             .expect("Failed to drop database");
     }
+}
+
+async fn create_test_user(pool: &PgPool) -> TestUser {
+    let user_id = Uuid::new_v4();
+    let test_user = TestUser {
+        id: UserID(user_id.to_string()),
+        email: Email(format!("{}@mail.com", Uuid::new_v4().to_string())),
+        username: Username(Uuid::new_v4().to_string()),
+        password: Password(Uuid::new_v4().to_string()),
+    };
+
+    let password_hash: Password = hash_password(test_user.password.clone()).await.unwrap();
+
+    sqlx::query!(
+        r#"
+            INSERT INTO public.users (
+                id, email, username, password
+            ) VALUES (
+                $1, $2, $3, $4
+            );
+        "#,
+        &user_id,
+        test_user.email.as_ref(),
+        test_user.username.as_ref(),
+        password_hash.as_ref()
+    )
+    .execute(pool)
+    .await
+    .unwrap();
+
+    test_user
 }
 
 async fn create_db(config: &DBConfig) -> (PgConnection, PgPool) {
