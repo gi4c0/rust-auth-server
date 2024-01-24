@@ -30,11 +30,16 @@ pub enum ServerError {
 
     #[error("Invalid login or password")]
     InvalidCredentials,
+
+    #[error("Unauthorized")]
+    Unauthorized,
 }
 
 impl IntoResponse for ServerError {
     fn into_response(self) -> Response {
         match self {
+            ServerError::Unauthorized => (StatusCode::BAD_REQUEST).into_response(),
+
             ServerError::ValidationError(e) => {
                 let json = ErrorResponse::with_data("Input validation error", format_errors(&e));
                 (StatusCode::BAD_REQUEST, Json(json)).into_response()
