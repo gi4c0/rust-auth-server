@@ -2,14 +2,14 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use anyhow::Context;
 use jsonwebtoken::{encode, Algorithm, DecodingKey, EncodingKey, Header, TokenData, Validation};
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 use crate::domains::user::UserID;
 
 #[derive(Serialize, Deserialize)]
-struct Claims {
+struct Claims<T> {
     exp: u64,
-    data: UserData,
+    data: T,
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -45,10 +45,10 @@ pub fn sign(user_id: UserID) -> anyhow::Result<String> {
     .context("Failed to sign jwt")
 }
 
-pub fn verify(token: &str) -> anyhow::Result<UserData> {
+pub fn verify<T: DeserializeOwned>(token: &str) -> anyhow::Result<T> {
     let secret = std::env::var("JWT_SECRET")?;
 
-    let token_data: TokenData<Claims> = jsonwebtoken::decode(
+    let token_data: TokenData<Claims<T>> = jsonwebtoken::decode(
         token,
         &DecodingKey::from_secret(secret.as_bytes()),
         &Validation::new(Algorithm::HS512),

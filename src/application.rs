@@ -1,18 +1,10 @@
 use axum::{
-    middleware,
     routing::{get, post},
     Router,
 };
 use tokio::net::TcpListener;
 
-use crate::{
-    configuration::Configuration,
-    db, middlewares,
-    routes::{
-        self,
-        auth::{login::login, register},
-    },
-};
+use crate::{configuration::Configuration, db, routes::auth};
 
 pub struct Application {
     router: Router,
@@ -25,12 +17,9 @@ impl Application {
         let pool = db::connect(&config.db).await;
 
         let router = Router::new()
-            .route("/auth/register", post(register))
-            .route("/auth/login", post(login))
-            .route(
-                "/me",
-                get(routes::authorized_endpoint).layer(middleware::from_fn(middlewares::auth)),
-            )
+            .route("/auth/register", post(auth::register))
+            .route("/auth/login", post(auth::login))
+            .route("/auth/me", get(auth::me))
             .with_state(pool);
 
         let listener = TcpListener::bind(format!("{}:{}", &config.app.host, &config.app.port))

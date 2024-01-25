@@ -5,7 +5,7 @@ use axum::{
     response::Response,
 };
 
-use crate::utils::jwt;
+use crate::utils::jwt::{self};
 
 pub async fn auth(
     headers: HeaderMap,

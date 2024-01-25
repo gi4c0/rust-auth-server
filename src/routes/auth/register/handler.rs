@@ -5,7 +5,7 @@ use validator::Validate;
 
 use crate::{
     domains::user::{Email, Password, Username},
-    parsers::ValidateJson,
+    extractors::ValidateJson,
     utils::{
         password::hash_password,
         response::{DataResponse, ServerResponse},

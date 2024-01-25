@@ -10,7 +10,7 @@ use validator::Validate;
 
 use crate::{
     domains::user::{Password, Username},
-    parsers::ValidateJson,
+    extractors::ValidateJson,
     utils::{err::ServerError, jwt, password::verify_password, response::ServerResponse},
 };
 
