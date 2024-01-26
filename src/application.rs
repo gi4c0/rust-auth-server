@@ -3,8 +3,14 @@ use axum::{
     Router,
 };
 use tokio::net::TcpListener;
+use tower_http::trace::{self, TraceLayer};
+use tracing::Level;
 
-use crate::{configuration::Configuration, db, routes::auth};
+use crate::{
+    configuration::Configuration,
+    db,
+    routes::{auth, root},
+};
 
 pub struct Application {
     router: Router,
@@ -20,7 +26,13 @@ impl Application {
             .route("/auth/register", post(auth::register))
             .route("/auth/login", post(auth::login))
             .route("/auth/me", get(auth::me))
-            .with_state(pool);
+            .route("/", get(root))
+            .with_state(pool)
+            .layer(
+                TraceLayer::new_for_http()
+                    .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
+                    .on_response(trace::DefaultOnResponse::new().level(Level::INFO)),
+            );
 
         let listener = TcpListener::bind(format!("{}:{}", &config.app.host, &config.app.port))
             .await

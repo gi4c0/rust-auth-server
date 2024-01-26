@@ -6,6 +6,7 @@ use axum::{
 };
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
+use tracing::instrument;
 use validator::Validate;
 
 use crate::{
@@ -16,7 +17,7 @@ use crate::{
 
 use super::loader::{get_user, UserLoginInfo};
 
-#[derive(Serialize, Deserialize, Validate)]
+#[derive(Serialize, Deserialize, Validate, Debug)]
 pub struct Payload {
     #[validate(custom = "crate::parsers::user::validate_username")]
     pub username: Username,
@@ -25,6 +26,7 @@ pub struct Payload {
     pub password: Password,
 }
 
+#[instrument(name = "login", skip(pool))]
 pub async fn login(
     pool: State<PgPool>,
     ValidateJson(payload): ValidateJson<Payload>,
