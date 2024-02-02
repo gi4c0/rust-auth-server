@@ -1,38 +1,47 @@
-use axum::{
-    routing::{get, post},
-    Router,
-};
+use axum::{extract::MatchedPath, http::Request, Router};
+use sqlx::PgPool;
 use tokio::net::TcpListener;
 use tower_http::trace::{self, TraceLayer};
-use tracing::Level;
+use tracing::{info_span, Level};
+use uuid::Uuid;
 
-use crate::{
-    configuration::Configuration,
-    db,
-    routes::{auth, root},
-};
+use crate::{configuration::Configuration, db, routes::routes};
 
-pub struct Application {
+pub struct App {
     router: Router,
     listener: TcpListener,
     port: u16,
 }
 
-impl Application {
+#[derive(Clone)]
+pub struct AppCtx {
+    pub db: PgPool,
+}
+
+impl App {
     pub async fn build(config: &Configuration) -> Self {
         let pool = db::connect(&config.db).await;
+        let state = AppCtx { db: pool };
 
-        let router = Router::new()
-            .route("/auth/register", post(auth::register))
-            .route("/auth/login", post(auth::login))
-            .route("/auth/me", get(auth::me))
-            .route("/", get(root))
-            .with_state(pool)
-            .layer(
-                TraceLayer::new_for_http()
-                    .make_span_with(trace::DefaultMakeSpan::new().level(Level::INFO))
-                    .on_response(trace::DefaultOnResponse::new().level(Level::INFO)),
-            );
+        let router = Router::new().merge(routes()).with_state(state).layer(
+            TraceLayer::new_for_http()
+                .make_span_with(|request: &Request<_>| {
+                    let matched_path = request
+                        .extensions()
+                        .get::<MatchedPath>()
+                        .map(MatchedPath::as_str);
+
+                    let request_id = Uuid::new_v4().to_string();
+
+                    info_span!(
+                        "http_request",
+                        method = ?request.method(),
+                        matched_path,
+                        ID = request_id
+                    )
+                })
+                .on_response(trace::DefaultOnResponse::new().level(Level::INFO)),
+        );
 
         let listener = TcpListener::bind(format!("{}:{}", &config.app.host, &config.app.port))
             .await

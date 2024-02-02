@@ -1,7 +1,7 @@
 use crate::helper::TestApp;
 
 use claims::assert_ok;
-use lib::utils::{err::ServerError, response::DataResponse};
+use lib::utils::{err::AppError, response::DataResponse};
 use reqwest::Response;
 use serde_json::{json, Value};
 use uuid::Uuid;
@@ -88,7 +88,7 @@ async fn return_400_on_existing_user() {
         let json: Value = response.json().await.unwrap();
         assert_eq!(
             json["message"].as_str().unwrap(),
-            &ServerError::DuplicatedUser.to_string()
+            &AppError::DuplicatedUser.to_string()
         );
     }
 

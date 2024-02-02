@@ -1,14 +1,14 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse};
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 use validator::Validate;
 
 use crate::{
+    application::AppCtx,
     domains::user::{Email, Password, Username},
     extractors::ValidateJson,
     utils::{
         password::hash_password,
-        response::{DataResponse, ServerResponse},
+        response::{DataResponse, AppResponse},
     },
 };
 
@@ -27,9 +27,9 @@ pub struct Payload {
 }
 
 pub async fn register(
-    State(pool): State<PgPool>,
+    State(ctx): State<AppCtx>,
     ValidateJson(payload): ValidateJson<Payload>,
-) -> ServerResponse {
+) -> AppResponse {
     let password_hash = hash_password(payload.password).await?;
 
     let payload = Payload {
@@ -37,6 +37,6 @@ pub async fn register(
         ..payload
     };
 
-    let user_id = insert_new_user(&pool, &payload).await?;
+    let user_id = insert_new_user(&ctx.db, &payload).await?;
     Ok((StatusCode::OK, DataResponse::new(user_id.to_string())).into_response())
 }

@@ -1,14 +1,18 @@
-use anyhow::Context;
 use sqlx::PgPool;
+use tracing::instrument;
 
-use crate::domains::user::{Password, UserID, Username};
+use crate::{
+    domains::user::{Password, UserID, Username},
+    utils::{err::DbResultExt, response::AppResult},
+};
 
 pub struct UserLoginInfo {
     pub id: UserID,
     pub password_hash: Password,
 }
 
-pub async fn get_user(pool: &PgPool, username: &Username) -> anyhow::Result<Option<UserLoginInfo>> {
+#[instrument(skip(pool))]
+pub async fn get_user(pool: &PgPool, username: &Username) -> AppResult<Option<UserLoginInfo>> {
     sqlx::query!(
         r#"
             SELECT
@@ -23,7 +27,7 @@ pub async fn get_user(pool: &PgPool, username: &Username) -> anyhow::Result<Opti
     )
     .fetch_optional(pool)
     .await
-    .context("Failed to fetch user login data")
+    .trace_db("Failed to fetch user login data")
     .map(|maybe_row| {
         maybe_row.map(|row| UserLoginInfo {
             id: UserID(row.id.to_string()),
@@ -31,3 +35,30 @@ pub async fn get_user(pool: &PgPool, username: &Username) -> anyhow::Result<Opti
         })
     })
 }
+
+/*
+#[instrument(skip(pool))]
+pub async fn get_user(pool: &PgPool, username: &Username) -> ServerResult<Option<UserLoginInfo>> {
+    sqlx::query(
+        r#"
+            SELEC
+                id,
+                password
+            FROM
+                public.users
+            WHERE
+                username = $1
+        "#,
+    )
+    .bind(username.as_ref())
+    .fetch_optional(pool)
+    .await
+    .trace_db("Failed to fetch user login data")
+    .map(|maybe_row| {
+        maybe_row.map(|row| UserLoginInfo {
+            id: UserID(row.get("id")),
+            password_hash: Password(row.get("password")),
+        })
+    })
+}
+*/

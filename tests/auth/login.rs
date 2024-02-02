@@ -1,4 +1,4 @@
-use lib::utils::err::ServerError;
+use lib::utils::err::AppError;
 use reqwest::{header::AUTHORIZATION, Response};
 use serde_json::{json, Value};
 
@@ -26,7 +26,7 @@ async fn login_failed_on_invalid_json_data() {
 
         assert_eq!(
             json_response["message"].as_str().unwrap(),
-            ServerError::InvalidCredentials.to_string()
+            AppError::InvalidCredentials.to_string()
         );
     }
 

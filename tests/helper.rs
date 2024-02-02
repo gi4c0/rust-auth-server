@@ -2,7 +2,7 @@ use std::cell::RefCell;
 
 use dotenv::dotenv;
 use lib::{
-    application::Application,
+    application::App,
     configuration::{self, AppConfig, Configuration, DBConfig},
     domains::user::{Email, Password, UserID, Username},
     utils::password::hash_password,
@@ -44,7 +44,7 @@ impl TestApp {
 
         let (connection, pool) = create_db(&config.db).await;
 
-        let app = Application::build(&config).await;
+        let app = App::build(&config).await;
         let port = app.get_port();
 
         tokio::spawn(app.run());

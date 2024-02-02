@@ -5,14 +5,14 @@ use axum::{
     response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
-use tracing::instrument;
+use tracing::{instrument, Level};
 use validator::Validate;
 
 use crate::{
+    application::AppCtx,
     domains::user::{Password, Username},
     extractors::ValidateJson,
-    utils::{err::ServerError, jwt, password::verify_password, response::ServerResponse},
+    utils::{err::AppError, jwt, password::verify_password, response::AppResponse},
 };
 
 use super::loader::{get_user, UserLoginInfo};
@@ -26,19 +26,19 @@ pub struct Payload {
     pub password: Password,
 }
 
-#[instrument(name = "login", skip(pool))]
+#[instrument(skip(ctx), level = Level::INFO)]
 pub async fn login(
-    pool: State<PgPool>,
+    State(ctx): State<AppCtx>,
     ValidateJson(payload): ValidateJson<Payload>,
-) -> ServerResponse {
-    let UserLoginInfo { password_hash, id } = get_user(&pool, &payload.username)
+) -> AppResponse {
+    let UserLoginInfo { password_hash, id } = get_user(&ctx.db, &payload.username)
         .await?
-        .ok_or(ServerError::InvalidCredentials)?;
+        .ok_or(AppError::InvalidCredentials)?;
 
     let is_valid_password = verify_password(payload.password, password_hash).await?;
 
     if !is_valid_password {
-        return Err(ServerError::InvalidCredentials);
+        return Err(AppError::InvalidCredentials);
     }
 
     let token = jwt::sign(id)?;

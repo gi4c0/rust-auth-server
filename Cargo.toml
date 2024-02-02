@@ -31,8 +31,9 @@ claims = "0.7.1"
 jsonwebtoken = "9.2.0"
 maud = { version = "0.26.0", features = ["axum"] }
 tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.18", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "json", "tracing-log"] }
 tower-http = { version = "0.5.1", features = ["trace"] }
+tower = "0.4.13"
 
 [dev-dependencies]
 reqwest = { version = "0.11.23", features = ["json"] }

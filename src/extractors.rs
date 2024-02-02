@@ -7,7 +7,7 @@ use axum::{
 use serde::de::DeserializeOwned;
 use validator::Validate;
 
-use crate::utils::{err::ServerError, jwt};
+use crate::utils::{err::AppError, jwt};
 
 pub struct ValidateJson<T>(pub T);
 
@@ -17,7 +17,7 @@ where
     S: Sync + Send,
     T: DeserializeOwned + Validate,
 {
-    type Rejection = ServerError;
+    type Rejection = AppError;
 
     async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
         let Json(value) = Json::<T>::from_request(req, state).await?;
@@ -35,19 +35,19 @@ where
     S: Sync + Send,
     T: DeserializeOwned,
 {
-    type Rejection = ServerError;
+    type Rejection = AppError;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
         let token = parts
             .headers
             .get(AUTHORIZATION)
-            .ok_or(ServerError::Unauthorized)?;
+            .ok_or(AppError::Unauthorized)?;
 
-        let token = token.to_str().map_err(|_| ServerError::Unauthorized)?;
+        let token = token.to_str().map_err(|_| AppError::Unauthorized)?;
 
         let user_info: T = jwt::verify(token).map_err(|e| {
             dbg!(e);
-            ServerError::Unauthorized
+            AppError::Unauthorized
         })?;
 
         Ok(Self(user_info))

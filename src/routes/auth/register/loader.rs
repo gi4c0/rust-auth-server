@@ -1,11 +1,16 @@
 use sqlx::PgPool;
+use tracing::instrument;
 use uuid::Uuid;
 
-use crate::utils::{err::ServerError, response::ServerResult};
+use crate::utils::{
+    err::{AppError, DbResultExt},
+    response::AppResult,
+};
 
 use super::Payload;
 
-pub async fn insert_new_user(pool: &PgPool, user: &Payload) -> ServerResult<Uuid> {
+#[instrument(skip(pool))]
+pub async fn insert_new_user(pool: &PgPool, user: &Payload) -> AppResult<Uuid> {
     sqlx::query!(
         r#"
             INSERT INTO users (username, password, email)
@@ -18,16 +23,6 @@ pub async fn insert_new_user(pool: &PgPool, user: &Payload) -> ServerResult<Uuid
     )
     .fetch_one(pool)
     .await
+    .with_unique_violation(AppError::DuplicatedUser, "Failed create new user")
     .map(|row| row.id)
-    .map_err(check_db_error)
-}
-
-fn check_db_error(err: sqlx::Error) -> ServerError {
-    if let sqlx::Error::Database(e) = &err {
-        if e.is_unique_violation() {
-            return ServerError::DuplicatedUser;
-        }
-    }
-
-    anyhow::anyhow!("Failed create a user: {}", err).into()
 }

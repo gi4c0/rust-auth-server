@@ -13,3 +13,10 @@ pub async fn connect(db_config: &DBConfig) -> Pool<Postgres> {
 
     pool
 }
+
+pub fn trace_error(context: &'static str) -> impl Fn(sqlx::Error) -> anyhow::Error {
+    return move |error: sqlx::Error| -> anyhow::Error {
+        tracing::error!("DB Error: {}", error);
+        anyhow::anyhow!("DB Error: {context}")
+    };
+}
