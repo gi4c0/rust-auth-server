@@ -1,5 +1,5 @@
 use axum::{
-    extract::rejection::JsonRejection,
+    extract::rejection::{JsonRejection, QueryRejection},
     http::StatusCode,
     response::{IntoResponse, Response},
     Json,
@@ -19,6 +19,9 @@ pub enum AppError {
 
     #[error(transparent)]
     AxumJsonRejection(#[from] JsonRejection),
+
+    #[error(transparent)]
+    AxumQueryRejection(#[from] QueryRejection),
 
     #[error("An error occurred with the DB")]
     DbError(#[from] sqlx::Error),
@@ -48,7 +51,9 @@ impl AppError {
             AppError::Unauthorized => StatusCode::UNAUTHORIZED,
             AppError::NotFound(_) => StatusCode::NOT_FOUND,
             AppError::ValidationError(_) => StatusCode::BAD_REQUEST,
-            AppError::AxumJsonRejection(_) => StatusCode::BAD_REQUEST,
+            AppError::AxumJsonRejection(_) | AppError::AxumQueryRejection(_) => {
+                StatusCode::BAD_REQUEST
+            }
             AppError::DuplicatedUser => StatusCode::BAD_REQUEST,
             AppError::DuplicatedArticle => StatusCode::BAD_REQUEST,
             AppError::InvalidCredentials => StatusCode::BAD_REQUEST,

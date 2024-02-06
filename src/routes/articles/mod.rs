@@ -1,4 +1,7 @@
-use axum::{routing::post, Router};
+use axum::{
+    routing::{get, post},
+    Router,
+};
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 
@@ -8,8 +11,10 @@ use crate::{
 };
 
 mod create_article;
+mod list;
 
-pub use create_article::{create_article, Payload};
+use create_article::create_article;
+use list::list_articles;
 
 #[derive(Deserialize, Serialize)]
 struct Article {
@@ -55,5 +60,7 @@ impl RawArticle {
 }
 
 pub fn routes() -> Router<AppCtx> {
-    Router::new().route("/articles", post(create_article))
+    Router::new()
+        .route("/articles", post(create_article))
+        .route("/articles", get(list_articles))
 }

@@ -1,6 +1,6 @@
 use axum::{
     async_trait,
-    extract::{FromRequest, FromRequestParts, Request},
+    extract::{FromRequest, FromRequestParts, Query, Request},
     http::{header::AUTHORIZATION, request::Parts},
     Json,
 };
@@ -51,5 +51,23 @@ where
         })?;
 
         Ok(Self(user_info))
+    }
+}
+
+pub struct ValidateQuery<T>(pub T);
+
+#[async_trait]
+impl<S, T> FromRequestParts<S> for ValidateQuery<T>
+where
+    S: Sync + Send,
+    T: DeserializeOwned + Validate,
+{
+    type Rejection = AppError;
+
+    async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let Query(value) = Query::<T>::from_request_parts(parts, state).await?;
+        value.validate()?;
+
+        Ok(Self(value))
     }
 }
