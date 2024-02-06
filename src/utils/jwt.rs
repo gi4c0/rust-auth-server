@@ -14,7 +14,7 @@ struct Claims<T> {
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct UserData {
-    user_id: UserID,
+    pub user_id: UserID,
 }
 
 pub fn sign(user_id: UserID) -> anyhow::Result<String> {

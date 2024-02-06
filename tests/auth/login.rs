@@ -1,5 +1,5 @@
 use lib::utils::err::AppError;
-use reqwest::{header::AUTHORIZATION, Response};
+use reqwest::header::AUTHORIZATION;
 use serde_json::{json, Value};
 
 use crate::helper::TestApp;
@@ -19,8 +19,8 @@ async fn login_failed_on_invalid_json_data() {
     });
 
     for body in vec![invalid_username, invalid_password] {
-        let response = login_endpoint(&app.address, &body).await;
-        assert_eq!(response.status().as_u16(), 401);
+        let response = app.login(&body).await;
+        assert_eq!(response.status().as_u16(), 400);
 
         let json_response: Value = response.json().await.unwrap();
 
@@ -42,19 +42,10 @@ async fn success_login_returns_header_token() {
         "password": &app.test_user.password
     });
 
-    let response = login_endpoint(&app.address, &body).await;
+    let response = app.login(&body).await;
 
     assert_eq!(response.status().as_u16(), 200);
     assert!(response.headers().get(AUTHORIZATION).unwrap().len() > 0);
 
     app.clean().await;
-}
-
-async fn login_endpoint(server_addr: &str, body: &Value) -> Response {
-    reqwest::Client::new()
-        .post(format!("http://{server_addr}/auth/login"))
-        .json(body)
-        .send()
-        .await
-        .unwrap()
 }

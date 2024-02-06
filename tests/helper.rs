@@ -7,6 +7,11 @@ use lib::{
     domains::user::{Email, Password, UserID, Username},
     utils::password::hash_password,
 };
+use reqwest::{
+    header::{HeaderValue, AUTHORIZATION},
+    Response,
+};
+use serde_json::{json, Value};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
 use uuid::Uuid;
 
@@ -77,6 +82,38 @@ impl TestApp {
             .execute(format!(r#"DROP DATABASE IF EXISTS "{}";"#, &self.db_name).as_str())
             .await
             .expect("Failed to drop database");
+    }
+
+    pub async fn login(&self, body: &Value) -> Response {
+        reqwest::Client::new()
+            .post(format!("http://{}/auth/login", &self.address))
+            .json(body)
+            .send()
+            .await
+            .unwrap()
+    }
+
+    async fn get_jwt(&self) -> HeaderValue {
+        let body = json!({
+            "username": &self.test_user.username,
+            "password": &self.test_user.password
+        });
+
+        let response = self.login(&body).await;
+
+        response.headers().get(AUTHORIZATION).unwrap().to_owned()
+    }
+
+    pub async fn create_article(&self, payload: &Value) -> Response {
+        let jwt = self.get_jwt().await;
+
+        reqwest::Client::new()
+            .post(format!("http://{}/articles", &self.address))
+            .json(payload)
+            .header(AUTHORIZATION, jwt)
+            .send()
+            .await
+            .unwrap()
     }
 }
 

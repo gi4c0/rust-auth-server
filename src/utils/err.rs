@@ -29,6 +29,9 @@ pub enum AppError {
     #[error("User with given username or email already exists")]
     DuplicatedUser,
 
+    #[error("Article with given title already exists")]
+    DuplicatedArticle,
+
     #[error("{0}")]
     NotFound(String),
 
@@ -47,6 +50,7 @@ impl AppError {
             AppError::ValidationError(_) => StatusCode::BAD_REQUEST,
             AppError::AxumJsonRejection(_) => StatusCode::BAD_REQUEST,
             AppError::DuplicatedUser => StatusCode::BAD_REQUEST,
+            AppError::DuplicatedArticle => StatusCode::BAD_REQUEST,
             AppError::InvalidCredentials => StatusCode::BAD_REQUEST,
             AppError::InternalServerError(_) | AppError::DbError(_) => {
                 StatusCode::INTERNAL_SERVER_ERROR

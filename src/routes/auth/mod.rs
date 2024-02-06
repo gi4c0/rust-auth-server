@@ -1,14 +1,15 @@
 mod login;
 mod me;
-pub mod register;
+mod register;
 
 use axum::{
     routing::{get, post},
     Router,
 };
-pub use login::*;
-pub use me::*;
-pub use register::register;
+
+use login::login;
+use me::me;
+use register::register;
 
 use crate::application::AppCtx;
 
