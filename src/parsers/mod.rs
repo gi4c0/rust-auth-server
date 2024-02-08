@@ -1,3 +1,4 @@
+pub mod article;
 mod format_errors;
 pub mod user;
 

@@ -1,9 +1,9 @@
 use std::str::FromStr;
 
 use claims::assert_ok;
-use lib::utils::err::AppError;
+use lib::{routes::articles::create_article, utils::err::AppError};
 use reqwest::StatusCode;
-use serde_json::{json, Value};
+use serde_json::Value;
 
 use crate::helper::TestApp;
 
@@ -11,11 +11,11 @@ use crate::helper::TestApp;
 async fn create_new_article() {
     let app = TestApp::spawn().await;
 
-    let payload = json!({
-        "title": "A unique title",
-        "text": "A long new article",
-        "tags": ["tag1", "tag2"]
-    });
+    let payload = create_article::Payload {
+        title: "A unique title".to_string(),
+        text: "A long new article".to_string(),
+        tags: Some(vec!["tag1".to_string(), "tag2".to_string()]),
+    };
 
     let response = app.create_article(&payload).await;
 
@@ -32,11 +32,11 @@ async fn create_new_article() {
 async fn fail_on_creating_article_with_duplicated_title() {
     let app = TestApp::spawn().await;
 
-    let payload = json!({
-        "title": "A unique title",
-        "text": "A long new article",
-        "tags": ["tag1", "tag2"]
-    });
+    let payload = create_article::Payload {
+        title: "A unique title".to_string(),
+        text: "A long new article".to_string(),
+        tags: Some(vec!["tag1".to_string(), "tag2".to_string()]),
+    };
 
     let response = app.create_article(&payload).await;
     assert_eq!(response.status().as_u16(), StatusCode::CREATED);

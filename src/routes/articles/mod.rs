@@ -1,52 +1,51 @@
-use axum::{
-    routing::{get, post},
-    Router,
-};
+use axum::{routing::post, Router};
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 use crate::{
     application::AppCtx,
     domains::user::{UserID, Username},
 };
 
-mod create_article;
-mod list;
+pub mod create_article;
+pub mod list;
 
 use create_article::create_article;
 use list::list_articles;
 
 #[derive(Deserialize, Serialize)]
-struct Article {
-    id: String,
-    author: Author,
-    text: String,
-    title: String,
-    tags: Vec<String>,
-    created_at: NaiveDateTime,
+pub struct Article {
+    pub id: String,
+    pub author: Author,
+    pub text: String,
+    pub title: String,
+    pub tags: Vec<String>,
+    pub created_at: NaiveDateTime,
 }
 
 #[derive(Deserialize, Serialize)]
-struct Author {
-    id: UserID,
-    username: Username,
+pub struct Author {
+    pub id: UserID,
+    pub username: Username,
 }
 
-#[derive(Deserialize, Serialize)]
-struct RawArticle {
-    id: String,
+#[derive(sqlx::FromRow)]
+struct RawArticleFullCount {
+    full_count: Option<i64>,
+    id: Uuid,
     text: String,
     title: String,
     tags: Option<Vec<String>>,
     created_at: NaiveDateTime,
-    author_id: String,
+    author_id: Uuid,
     author_username: String,
 }
 
-impl RawArticle {
+impl RawArticleFullCount {
     fn into_article(self) -> Article {
         return Article {
-            id: self.id,
+            id: self.id.to_string(),
             author: Author {
                 id: UserID(self.author_id),
                 username: Username(self.author_username),
@@ -62,5 +61,5 @@ impl RawArticle {
 pub fn routes() -> Router<AppCtx> {
     Router::new()
         .route("/articles", post(create_article))
-        .route("/articles", get(list_articles))
+        .route("/get-articles", post(list_articles))
 }

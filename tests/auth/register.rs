@@ -109,7 +109,7 @@ async fn check_endpoint(body: Value, error_part: &str, address: &str) {
 
 async fn make_request(body: &Value, address: &str) -> Response {
     reqwest::Client::new()
-        .post(format!("http://{}/auth/register", address))
+        .post(format!("{}/auth/register", address))
         .json(body)
         .send()
         .await

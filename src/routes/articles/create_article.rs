@@ -1,11 +1,7 @@
-use std::str::FromStr;
-
-use anyhow::Context;
 use axum::{extract::State, http::StatusCode, response::IntoResponse};
 use serde::{Deserialize, Serialize};
 use sqlx::PgPool;
 use tracing::instrument;
-use uuid::Uuid;
 use validator::Validate;
 
 use crate::{
@@ -18,7 +14,7 @@ use crate::{
     },
 };
 
-use super::{Article, RawArticle};
+use super::{Article, RawArticleFullCount};
 
 #[derive(Deserialize, Validate, Debug, Serialize)]
 pub struct Payload {
@@ -51,7 +47,7 @@ async fn insert_new_article(
     let empty_tags = vec![];
 
     sqlx::query_as!(
-        RawArticle,
+        RawArticleFullCount,
         r#"
             WITH inserted_article AS (
                 INSERT INTO articles (
@@ -60,7 +56,7 @@ async fn insert_new_article(
                     text,
                     tags
                 ) VALUES ($1, $2, $3, $4)
-                RETURNING id, author_id, title, text, tags, created_at
+                RETURNING id, author_id, title, text, tags, created_at, 0::BIGINT AS full_count
             )
 
             SELECT
@@ -69,14 +65,13 @@ async fn insert_new_article(
             FROM inserted_article
             JOIN users u ON u.id = $1
         "#,
-        Uuid::from_str(user.user_id.as_ref())
-            .with_context(|| format!("Invalid uuid for user ID: {}", user.user_id.as_ref()))?,
+        user.user_id.as_ref(),
         &payload.title,
         &payload.text,
         &payload.tags.as_ref().unwrap_or(&empty_tags),
     )
     .fetch_one(pool)
     .await
-    .map(RawArticle::into_article)
+    .map(RawArticleFullCount::into_article)
     .with_unique_violation(AppError::DuplicatedArticle, "Duplicated article title")
 }

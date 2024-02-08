@@ -30,7 +30,7 @@ pub async fn get_user(pool: &PgPool, username: &Username) -> AppResult<Option<Us
     .trace_db("Failed to fetch user login data")
     .map(|maybe_row| {
         maybe_row.map(|row| UserLoginInfo {
-            id: UserID(row.id.to_string()),
+            id: UserID(row.id),
             password_hash: Password(row.password),
         })
     })

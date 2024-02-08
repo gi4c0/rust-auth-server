@@ -5,6 +5,7 @@ use lib::{
     application::App,
     configuration::{self, AppConfig, Configuration, DBConfig},
     domains::user::{Email, Password, UserID, Username},
+    routes::articles::create_article,
     utils::password::hash_password,
 };
 use reqwest::{
@@ -13,6 +14,8 @@ use reqwest::{
 };
 use serde_json::{json, Value};
 use sqlx::{Connection, Executor, PgConnection, PgPool};
+use tokio::sync::OnceCell;
+use tracing::Level;
 use uuid::Uuid;
 
 pub struct TestApp {
@@ -30,8 +33,22 @@ pub struct TestUser {
     pub email: Email,
 }
 
+async fn init_tracing() {
+    if std::env::var("TRACE").is_ok() {
+        tracing_subscriber::fmt()
+            .with_target(false)
+            .with_max_level(Level::DEBUG)
+            .pretty()
+            .init();
+    }
+}
+
+static TRACING: OnceCell<()> = OnceCell::const_new();
+
 impl TestApp {
     pub async fn spawn() -> TestApp {
+        TRACING.get_or_init(init_tracing).await;
+
         dotenv().unwrap();
         let config = configuration::parse_config();
         let db_name = Uuid::new_v4().to_string();
@@ -56,7 +73,7 @@ impl TestApp {
         let test_user = create_test_user(&pool).await;
 
         TestApp {
-            address: format!("127.0.0.1:{port}"),
+            address: format!("http://127.0.0.1:{port}"),
             connection: RefCell::new(connection),
             pool,
             db_name,
@@ -86,7 +103,7 @@ impl TestApp {
 
     pub async fn login(&self, body: &Value) -> Response {
         reqwest::Client::new()
-            .post(format!("http://{}/auth/login", &self.address))
+            .post(format!("{}/auth/login", &self.address))
             .json(body)
             .send()
             .await
@@ -104,11 +121,11 @@ impl TestApp {
         response.headers().get(AUTHORIZATION).unwrap().to_owned()
     }
 
-    pub async fn create_article(&self, payload: &Value) -> Response {
+    pub async fn create_article(&self, payload: &create_article::Payload) -> Response {
         let jwt = self.get_jwt().await;
 
         reqwest::Client::new()
-            .post(format!("http://{}/articles", &self.address))
+            .post(format!("{}/articles", &self.address))
             .json(payload)
             .header(AUTHORIZATION, jwt)
             .send()
@@ -120,7 +137,7 @@ impl TestApp {
 async fn create_test_user(pool: &PgPool) -> TestUser {
     let user_id = Uuid::new_v4();
     let test_user = TestUser {
-        id: UserID(user_id.to_string()),
+        id: UserID(user_id),
         email: Email(format!("{}@mail.com", Uuid::new_v4().to_string())),
         username: Username(Uuid::new_v4().to_string()),
         password: Password(Uuid::new_v4().to_string()),

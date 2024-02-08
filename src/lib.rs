@@ -6,4 +6,5 @@ pub mod extractors;
 pub mod middlewares;
 pub mod parsers;
 pub mod routes;
+pub mod types;
 pub mod utils;
