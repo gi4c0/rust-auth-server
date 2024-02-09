@@ -31,7 +31,9 @@ async fn successfully_return_articles() {
     let article_payloads = get_payload();
 
     for article_payload in &article_payloads {
-        let response = app.create_article(article_payload).await;
+        let response = app
+            .create_article(article_payload, &app.test_users[0])
+            .await;
         assert_eq!(response.status().as_u16(), StatusCode::CREATED);
     }
 
@@ -62,7 +64,10 @@ async fn filter_articles_by_tags() {
     let article_payloads = get_payload();
 
     for article_payload in &article_payloads {
-        let response = app.create_article(article_payload).await;
+        let response = app
+            .create_article(article_payload, &app.test_users[0])
+            .await;
+
         assert_eq!(response.status().as_u16(), StatusCode::CREATED);
     }
 
@@ -91,7 +96,10 @@ async fn order_articles_by_created_at_asc() {
     let article_payloads = get_payload();
 
     for article_payload in &article_payloads {
-        let response = app.create_article(article_payload).await;
+        let response = app
+            .create_article(article_payload, &app.test_users[0])
+            .await;
+
         assert_eq!(response.status().as_u16(), StatusCode::CREATED);
 
         // For articles to have different created_at
@@ -100,7 +108,7 @@ async fn order_articles_by_created_at_asc() {
 
     let body = json!({
         "order_by": [
-            { "created_at": "ASB" },
+            { "created_at": "ASC" },
             { "username": "ASC" }
         ]
     });
@@ -116,6 +124,38 @@ async fn order_articles_by_created_at_asc() {
         assert_eq!(response.results[i].text, item.text);
         assert_eq!(&response.results[i].tags, item.tags.as_ref().unwrap());
     }
+
+    app.clean().await;
+}
+
+#[tokio::test]
+async fn filter_articles_by_username() {
+    let app = TestApp::spawn().await;
+
+    let article_payloads = get_payload();
+
+    for (i, article_payload) in article_payloads.iter().enumerate() {
+        let response = app
+            .create_article(&article_payload, &app.test_users[i])
+            .await;
+
+        assert_eq!(response.status().as_u16(), StatusCode::CREATED);
+    }
+
+    let body = json!({ "author": &app.test_users[0].username });
+
+    let response = get_articles_list(&body, &app.address).await;
+    let response: SearchType<Article> = response.json().await.unwrap();
+
+    assert_eq!(response.total, 1);
+
+    assert_eq!(response.results[0].title, article_payloads[0].title);
+    assert_eq!(response.results[0].text, article_payloads[0].text);
+
+    assert_eq!(
+        &response.results[0].tags,
+        article_payloads[0].tags.as_ref().unwrap()
+    );
 
     app.clean().await;
 }

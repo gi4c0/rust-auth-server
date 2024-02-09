@@ -10,11 +10,11 @@ async fn login_failed_on_invalid_json_data() {
 
     let invalid_username = json!({
         "username": "non_existing_username",
-        "password": &app.test_user.password
+        "password": &app.test_users[0].password
     });
 
     let invalid_password = json!({
-        "username": &app.test_user.username,
+        "username": &app.test_users[0].username,
         "password": "invalid_password"
     });
 
@@ -38,8 +38,8 @@ async fn success_login_returns_header_token() {
     let app = TestApp::spawn().await;
 
     let body = json!({
-        "username": &app.test_user.username,
-        "password": &app.test_user.password
+        "username": &app.test_users[0].username,
+        "password": &app.test_users[0].password
     });
 
     let response = app.login(&body).await;

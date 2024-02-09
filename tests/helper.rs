@@ -21,7 +21,7 @@ use uuid::Uuid;
 pub struct TestApp {
     pub address: String,
     pub pool: PgPool,
-    pub test_user: TestUser,
+    pub test_users: Vec<TestUser>,
     connection: RefCell<PgConnection>,
     db_name: String,
 }
@@ -70,14 +70,18 @@ impl TestApp {
         let port = app.get_port();
 
         tokio::spawn(app.run());
-        let test_user = create_test_user(&pool).await;
+        let mut test_users = vec![];
+
+        for _ in 0..10 {
+            test_users.push(create_test_user(&pool).await);
+        }
 
         TestApp {
             address: format!("http://127.0.0.1:{port}"),
             connection: RefCell::new(connection),
             pool,
             db_name,
-            test_user,
+            test_users,
         }
     }
 
@@ -110,10 +114,10 @@ impl TestApp {
             .unwrap()
     }
 
-    async fn get_jwt(&self) -> HeaderValue {
+    async fn get_jwt(&self, test_user: &TestUser) -> HeaderValue {
         let body = json!({
-            "username": &self.test_user.username,
-            "password": &self.test_user.password
+            "username": &test_user.username,
+            "password": &test_user.password
         });
 
         let response = self.login(&body).await;
@@ -121,8 +125,12 @@ impl TestApp {
         response.headers().get(AUTHORIZATION).unwrap().to_owned()
     }
 
-    pub async fn create_article(&self, payload: &create_article::Payload) -> Response {
-        let jwt = self.get_jwt().await;
+    pub async fn create_article(
+        &self,
+        payload: &create_article::Payload,
+        user: &TestUser,
+    ) -> Response {
+        let jwt = self.get_jwt(user).await;
 
         reqwest::Client::new()
             .post(format!("{}/articles", &self.address))
