@@ -162,7 +162,7 @@ async fn filter_articles_by_username() {
 
 async fn get_articles_list<P: Serialize>(payload: &P, addr: &str) -> Response {
     reqwest::Client::new()
-        .post(format!("{}/get-articles", addr))
+        .post(format!("{}/articles/get-articles", addr))
         .json(payload)
         .send()
         .await

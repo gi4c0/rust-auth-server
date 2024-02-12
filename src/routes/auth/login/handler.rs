@@ -5,7 +5,7 @@ use axum::{
     response::IntoResponse,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{instrument, Level};
+use tracing::instrument;
 use validator::Validate;
 
 use crate::{
@@ -26,7 +26,7 @@ pub struct Payload {
     pub password: Password,
 }
 
-#[instrument(skip(ctx), level = Level::INFO)]
+#[instrument(skip(ctx))]
 pub async fn login(
     State(ctx): State<AppCtx>,
     ValidateJson(payload): ValidateJson<Payload>,

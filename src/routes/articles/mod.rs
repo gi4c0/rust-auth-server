@@ -10,6 +10,7 @@ use crate::{
 
 pub mod create_article;
 pub mod list;
+pub mod subscribe;
 
 use create_article::create_article;
 use list::list_articles;
@@ -61,5 +62,6 @@ impl RawArticleFullCount {
 pub fn routes() -> Router<AppCtx> {
     Router::new()
         .route("/articles", post(create_article))
-        .route("/get-articles", post(list_articles))
+        .route("/articles/get-articles", post(list_articles))
+        .route("/articles/subscribe", post(subscribe::subscribe))
 }

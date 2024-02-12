@@ -2,8 +2,9 @@ use sqlx::PgPool;
 use tracing::instrument;
 
 use crate::{
+    db::DbResultExt,
     domains::user::{Password, UserID, Username},
-    utils::{err::DbResultExt, response::AppResult},
+    utils::response::AppResult,
 };
 
 pub struct UserLoginInfo {
@@ -13,7 +14,7 @@ pub struct UserLoginInfo {
 
 #[instrument(skip(pool))]
 pub async fn get_user(pool: &PgPool, username: &Username) -> AppResult<Option<UserLoginInfo>> {
-    sqlx::query!(
+    let result = sqlx::query!(
         r#"
             SELECT
                 id,
@@ -33,7 +34,9 @@ pub async fn get_user(pool: &PgPool, username: &Username) -> AppResult<Option<Us
             id: UserID(row.id),
             password_hash: Password(row.password),
         })
-    })
+    })?;
+
+    Ok(result)
 }
 
 /*

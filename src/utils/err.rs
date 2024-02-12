@@ -10,17 +10,17 @@ use validator::ValidationErrors;
 
 use crate::parsers::format_errors;
 
-use super::response::{AppResult, ErrorResponse};
+use super::response::ErrorResponse;
 
 #[derive(Debug, Error)]
 pub enum AppError {
     #[error(transparent)]
     ValidationError(#[from] ValidationErrors),
 
-    #[error(transparent)]
+    #[error("Malformed JSON")]
     AxumJsonRejection(#[from] JsonRejection),
 
-    #[error(transparent)]
+    #[error("Failed to parse query: invalid format")]
     AxumQueryRejection(#[from] QueryRejection),
 
     #[error("An error occurred with the DB")]
@@ -38,6 +38,9 @@ pub enum AppError {
     #[error("{0}")]
     NotFound(String),
 
+    #[error("{0}")]
+    BadRequest(String),
+
     #[error("Invalid login or password")]
     InvalidCredentials,
 
@@ -52,9 +55,10 @@ impl AppError {
             AppError::NotFound(_) => StatusCode::NOT_FOUND,
             AppError::ValidationError(_) => StatusCode::BAD_REQUEST,
             AppError::AxumJsonRejection(_) | AppError::AxumQueryRejection(_) => {
-                StatusCode::BAD_REQUEST
+                StatusCode::UNPROCESSABLE_ENTITY
             }
             AppError::DuplicatedUser => StatusCode::BAD_REQUEST,
+            AppError::BadRequest(_) => StatusCode::BAD_REQUEST,
             AppError::DuplicatedArticle => StatusCode::BAD_REQUEST,
             AppError::InvalidCredentials => StatusCode::BAD_REQUEST,
             AppError::InternalServerError(_) | AppError::DbError(_) => {
@@ -99,39 +103,5 @@ impl IntoResponse for AppError {
             Json(ErrorResponse::message(self.to_string())),
         )
             .into_response()
-    }
-}
-
-pub trait DbResultExt<T> {
-    fn trace_db(self, msg: &str) -> AppResult<T>;
-    fn with_unique_violation(self, provided_err: AppError, context: &str) -> AppResult<T>;
-}
-
-impl<T> DbResultExt<T> for Result<T, sqlx::Error> {
-    fn trace_db(self, msg: &str) -> AppResult<T> {
-        match self {
-            Ok(result) => Ok(result),
-            Err(e) => {
-                tracing::error!("DB Error ({msg}) {e}");
-                Err(e.into())
-            }
-        }
-    }
-
-    fn with_unique_violation(self, provided_err: AppError, context: &str) -> AppResult<T> {
-        match self {
-            Ok(result) => Ok(result),
-            Err(db_err) => {
-                if let sqlx::Error::Database(e) = &db_err {
-                    if e.is_unique_violation() {
-                        error!("{context} ({provided_err}) {db_err}");
-                        return Err(provided_err);
-                    }
-                }
-
-                tracing::error!("DB Error ({context}) {db_err}");
-                return Err(db_err.into());
-            }
-        }
     }
 }

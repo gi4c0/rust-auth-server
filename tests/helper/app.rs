@@ -4,19 +4,20 @@ use dotenv::dotenv;
 use lib::{
     application::App,
     configuration::{self, AppConfig, Configuration, DBConfig},
-    domains::user::{Email, Password, UserID, Username},
+    domains::user::UserID,
     routes::articles::create_article,
-    utils::password::hash_password,
 };
 use reqwest::{
     header::{HeaderValue, AUTHORIZATION},
-    Response,
+    Client, Response,
 };
 use serde_json::{json, Value};
-use sqlx::{Connection, Executor, PgConnection, PgPool};
+use sqlx::{Executor, PgConnection, PgPool};
 use tokio::sync::OnceCell;
 use tracing::Level;
 use uuid::Uuid;
+
+use super::{create_db, create_test_user, TestUser};
 
 pub struct TestApp {
     pub address: String,
@@ -24,13 +25,6 @@ pub struct TestApp {
     pub test_users: Vec<TestUser>,
     connection: RefCell<PgConnection>,
     db_name: String,
-}
-
-pub struct TestUser {
-    pub id: UserID,
-    pub username: Username,
-    pub password: Password,
-    pub email: Email,
 }
 
 async fn init_tracing() {
@@ -114,6 +108,22 @@ impl TestApp {
             .unwrap()
     }
 
+    pub async fn subscribe(&self, test_user: &TestUser, target_user_id: &UserID) -> Response {
+        let json = json!({
+            "user_id": target_user_id
+        });
+
+        let jwt = self.get_jwt(test_user).await;
+
+        Client::new()
+            .post(format!("{}/articles/subscribe", &self.address))
+            .json(&json)
+            .header(AUTHORIZATION, jwt)
+            .send()
+            .await
+            .unwrap()
+    }
+
     async fn get_jwt(&self, test_user: &TestUser) -> HeaderValue {
         let body = json!({
             "username": &test_user.username,
@@ -140,59 +150,4 @@ impl TestApp {
             .await
             .unwrap()
     }
-}
-
-async fn create_test_user(pool: &PgPool) -> TestUser {
-    let user_id = Uuid::new_v4();
-    let test_user = TestUser {
-        id: UserID(user_id),
-        email: Email(format!("{}@mail.com", Uuid::new_v4().to_string())),
-        username: Username(Uuid::new_v4().to_string()),
-        password: Password(Uuid::new_v4().to_string()),
-    };
-
-    let password_hash: Password = hash_password(test_user.password.clone()).await.unwrap();
-
-    sqlx::query!(
-        r#"
-            INSERT INTO public.users (
-                id, email, username, password
-            ) VALUES (
-                $1, $2, $3, $4
-            );
-        "#,
-        &user_id,
-        test_user.email.as_ref(),
-        test_user.username.as_ref(),
-        password_hash.as_ref()
-    )
-    .execute(pool)
-    .await
-    .unwrap();
-
-    test_user
-}
-
-async fn create_db(config: &DBConfig) -> (PgConnection, PgPool) {
-    let mut connection = PgConnection::connect_with(&config.without_db())
-        .await
-        .expect("Failed to connect to DB");
-
-    connection
-        .execute(format!("CREATE DATABASE \"{}\"", &config.db_name).as_str())
-        .await
-        .unwrap();
-
-    let pool = PgPool::connect_with(config.with_db())
-        .await
-        .expect("Failed to create pool");
-
-    sqlx::query("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\";")
-        .execute(&pool)
-        .await
-        .expect("Failed to create UUID extension");
-
-    sqlx::migrate!("./migrations").run(&pool).await.unwrap();
-
-    (connection, pool)
 }

@@ -7,12 +7,12 @@ use validator::Validate;
 
 use crate::{
     application::AppCtx,
+    db::DbResultExt,
     domains::user::Username,
     extractors::{MaybeAuthUser, ValidateJson},
     routes::articles::RawArticleFullCount,
     types::{SearchType, SortingDirection},
     utils::{
-        err::DbResultExt,
         jwt::UserData,
         response::{AppResponse, AppResult},
     },

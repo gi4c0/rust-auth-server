@@ -1,31 +1,12 @@
 use axum::{
     async_trait,
-    extract::{FromRequest, FromRequestParts, Query, Request},
+    extract::{FromRequestParts, Query},
     http::{header::AUTHORIZATION, request::Parts},
-    Json,
 };
 use serde::de::DeserializeOwned;
 use validator::Validate;
 
 use crate::utils::{err::AppError, jwt};
-
-pub struct ValidateJson<T>(pub T);
-
-#[async_trait]
-impl<T, S> FromRequest<S> for ValidateJson<T>
-where
-    S: Sync + Send,
-    T: DeserializeOwned + Validate,
-{
-    type Rejection = AppError;
-
-    async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
-        let Json(value) = Json::<T>::from_request(req, state).await?;
-        value.validate()?;
-
-        Ok(ValidateJson(value))
-    }
-}
 
 pub struct AuthUser<T>(pub T);
 

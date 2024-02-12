@@ -2,9 +2,9 @@ use sqlx::PgPool;
 use tracing::instrument;
 use uuid::Uuid;
 
-use crate::utils::{
-    err::{AppError, DbResultExt},
-    response::AppResult,
+use crate::{
+    db::DbResultExt,
+    utils::{err::AppError, response::AppResult},
 };
 
 use super::Payload;

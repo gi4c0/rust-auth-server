@@ -6,9 +6,10 @@ use validator::Validate;
 
 use crate::{
     application::AppCtx,
+    db::DbResultExt,
     extractors::{AuthUser, ValidateJson},
     utils::{
-        err::{AppError, DbResultExt},
+        err::AppError,
         jwt::UserData,
         response::{AppResponse, AppResult, DataResponse},
     },
