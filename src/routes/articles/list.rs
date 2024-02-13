@@ -7,7 +7,7 @@ use validator::Validate;
 
 use crate::{
     application::AppCtx,
-    db::DbResultExt,
+    db::{self, DbResultExt},
     domains::user::Username,
     extractors::{MaybeAuthUser, ValidateJson},
     routes::articles::RawArticleFullCount,
@@ -116,16 +116,5 @@ async fn get_articles_list(query: &Payload, pool: &PgPool) -> AppResult<SearchTy
     .await
     .trace_db("Failed to fetch list of articles")?;
 
-    let mut results = vec![];
-    let mut total: i64 = 0;
-
-    for item in raw_articles {
-        total = item.full_count.unwrap_or(0);
-        results.push(item.into_article());
-    }
-
-    Ok(SearchType {
-        results,
-        total: total as usize,
-    })
+    Ok(db::into_search_type(raw_articles))
 }

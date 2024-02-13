@@ -142,9 +142,25 @@ impl TestApp {
     ) -> Response {
         let jwt = self.get_jwt(user).await;
 
-        reqwest::Client::new()
+        Client::new()
             .post(format!("{}/articles", &self.address))
             .json(payload)
+            .header(AUTHORIZATION, jwt)
+            .send()
+            .await
+            .unwrap()
+    }
+
+    pub async fn get_subscribed(
+        &self,
+        user: &TestUser,
+        filter_by_user_id: Option<UserID>,
+    ) -> Response {
+        let jwt = self.get_jwt(user).await;
+
+        Client::new()
+            .get(format!("{}/articles/get-subscribed", &self.address))
+            .query(&[("user_id", filter_by_user_id)])
             .header(AUTHORIZATION, jwt)
             .send()
             .await

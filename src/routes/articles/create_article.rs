@@ -73,6 +73,6 @@ async fn insert_new_article(
     )
     .fetch_one(pool)
     .await
-    .map(RawArticleFullCount::into_article)
+    .map(|article| article.into())
     .with_unique_violation(AppError::DuplicatedArticle, "Duplicated article title")
 }

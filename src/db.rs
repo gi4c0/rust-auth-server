@@ -3,6 +3,7 @@ use tracing::error;
 
 use crate::{
     configuration::DBConfig,
+    types::SearchType,
     utils::{err::AppError, response::AppResult},
 };
 
@@ -62,4 +63,23 @@ impl<T> DbResultExt<T> for Result<T, sqlx::Error> {
             return db_err.into();
         })
     }
+}
+
+pub trait Total {
+    fn total(&self) -> usize;
+}
+
+pub fn into_search_type<T, R>(data: Vec<T>) -> SearchType<R>
+where
+    T: Into<R> + Total,
+{
+    let mut total: usize = 0;
+    let mut results: Vec<R> = vec![];
+
+    for item in data {
+        total = item.total();
+        results.push(item.into());
+    }
+
+    return SearchType { results, total };
 }

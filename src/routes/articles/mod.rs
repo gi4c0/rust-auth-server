@@ -1,18 +1,24 @@
-use axum::{routing::post, Router};
+use axum::{
+    routing::{get, post},
+    Router,
+};
 use chrono::NaiveDateTime;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
     application::AppCtx,
+    db::Total,
     domains::user::{UserID, Username},
 };
 
 pub mod create_article;
+pub mod get_subscribed;
 pub mod list;
 pub mod subscribe;
 
 use create_article::create_article;
+use get_subscribed::get_subscribed;
 use list::list_articles;
 
 #[derive(Deserialize, Serialize)]
@@ -43,8 +49,8 @@ struct RawArticleFullCount {
     author_username: String,
 }
 
-impl RawArticleFullCount {
-    fn into_article(self) -> Article {
+impl Into<Article> for RawArticleFullCount {
+    fn into(self) -> Article {
         return Article {
             id: self.id.to_string(),
             author: Author {
@@ -59,9 +65,16 @@ impl RawArticleFullCount {
     }
 }
 
+impl Total for RawArticleFullCount {
+    fn total(&self) -> usize {
+        return self.full_count.unwrap_or(0) as usize;
+    }
+}
+
 pub fn routes() -> Router<AppCtx> {
     Router::new()
         .route("/articles", post(create_article))
         .route("/articles/get-articles", post(list_articles))
         .route("/articles/subscribe", post(subscribe::subscribe))
+        .route("/articles/get-subscribed", get(get_subscribed))
 }
